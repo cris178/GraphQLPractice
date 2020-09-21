@@ -2,6 +2,11 @@ const graphql = require('graphql');
 var _ = require('lodash');
 
 
+//Import the models for mongodb
+//These are our 'collections' schemas
+const User = require('../model/user');
+const Post = require('../model/post');
+const Hobby = require('../model/hobby');
 
 const{
     GraphQLObjectType,
@@ -14,6 +19,7 @@ const{
 //Regularly you can just use them as graphql.GraphQLID but it's easier to make them their own variables to use below.
 
 
+/*
 var usersData = [
     {id: '1', name:"bob", age: 36, job:"Hillbilly"},
     {id: "2", name:"Cristian", age:27, job:"Unemployed"},
@@ -38,7 +44,7 @@ var PostData = [
     {id: "5", comments: "It's a me Cristian!", userId: '2'},
     {id: "7", comments: "Am typing online!", userId: '2'}
 ]
-
+*/
 
 //create types
 const UserType = new GraphQLObjectType({
@@ -54,14 +60,16 @@ const UserType = new GraphQLObjectType({
         posts:{
             type: new GraphQLList(PostType),
             resolve(parent,args){
-                return _.filter(PostData,{userId: parent.id}) //filter used for lists
+                return Post.find({userId:parent.id});
+              //return _.filter(PostData,{userId: parent.id}) //filter used for lists. We used this for local data but now we can use actual mongodb
             }
         },
         //Lets keep track of the users hobbies and return them if we want to
         hobbies:{
             type: new GraphQLList(HobbyType),
             resolve(parent,args){
-                return _.filter(hobbiesData,{userId: parent.id})
+                return Hobby.find({userId:parent.id});
+                //return _.filter(hobbiesData,{userId: parent.id}) //Commenting out the old logic that used local data
             }
         }
     }) //Data inside user
@@ -77,7 +85,8 @@ const HobbyType = new GraphQLObjectType({
         user:{
             type: UserType,
             resolve(parent,args){
-                return _.find(usersData,{id:parent.userId});
+                return User.findById(parent.userId);
+                //return _.find(usersData,{id:parent.userId});
             }
         }
     })
@@ -93,41 +102,51 @@ const PostType = new GraphQLObjectType({
         user:{
             type: UserType,
             resolve(parent,args){
-                return _.find(usersData,{id:parent.userId})
+                return User.findById(parent.userId);
+                //return _.find(usersData,{id:parent.userId})
             }
         }
     })
 });
+
+
 
 //Root Query
 const RootQuery = new GraphQLObjectType({
     name: "RootQueryType",
     description: "Description",
     fields : {
+        //query to return a user if you pass in as an arguement an id
         user: {
             type: UserType,
             args: {id:{type: GraphQLID}}, //What we may want to retrieve from user. How we are going to retrieve. Args what we have to pass in
             resolve(parents,args){//What the query returns
-                return _.find(usersData,{id:args.id})
+                return User.findById(args.id)
+                //return _.find(usersData,{id:args.id})
             }
         },
+        //query to return all users, don't need to pass in an arg to get all
         users:{
             type: new GraphQLList(UserType),
             resolve(parent,args){
-                return usersData
+                return User.find({});
+                //return usersData
             }
         },
         hobby: {
             type: HobbyType,
             args: {id:{type: GraphQLID}},
             resolve(parent,args){ //return data for hobby
-                return _.find(hobbiesData, {id:args.id})
+                return Hobby.findById(args.id);
+                //return _.find(hobbiesData, {id:args.id})
             }
         },
+        //query to return all hobbies
         hobbies:{
             type: new GraphQLList(HobbyType),
             resolve(parent,args){
-                return hobbiesData;
+                return Hobby.find({});
+                //return hobbiesData;
             }
         },
 
@@ -135,14 +154,16 @@ const RootQuery = new GraphQLObjectType({
             type: PostType,
             args: {id:{type: GraphQLID}},
             resolve(parent,args){
-                return _.find(PostData,{id:args.id})
+                return Post.findById(args.id)
+                //return _.find(PostData,{id:args.id})
             }
         },
         //Return all posts query
         posts:{
             type: new GraphQLList(PostType),
             resolve(parent,args){
-                return PostData;
+                return Post.find({});
+                //return PostData;
             }
         }
     }
@@ -161,12 +182,14 @@ const Mutation = new GraphQLObjectType({
                 age: {type: GraphQLInt},
                 job: {type: GraphQLString}
             },
+            //id automatically created by mangodb
             resolve(parent,args){
-                let user = {
+                let user = new User({
                     name : args.name,
                     age: args.age,
                     job: args.job
-                }
+                })
+                user.save();
                 return user;
             }
         },
@@ -178,10 +201,11 @@ const Mutation = new GraphQLObjectType({
                 userId: {type:GraphQLID}
             },
             resolve(parent, args){
-                let post = {
+                let post = new Post({
                     comments: args.comments,
                     userId: args.userId
-                }
+                })
+                post.save();
                 return post;
             }
         },
@@ -193,11 +217,12 @@ const Mutation = new GraphQLObjectType({
                 userId:{type:GraphQLID}
             },
             resolve(parent,args){
-                let hobby = {
+                let hobby = new Hobby({
                     title: args.title,
                     description: args.description,
                     userId: args.userId
-                }
+                })
+                hobby.save();
                 return hobby;
             }
         }

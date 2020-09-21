@@ -6,12 +6,9 @@ const {graphqlHTTP} = require('express-graphql');
 //Get mongoose
 const mongoose = require('mongoose');
 
-let mongoClient = 'mongodb+srv://cristian:M1passwordhere@cluster0.0nqvx.mongodb.net/Cluster0?retryWrites=true&w=majority';
 
-mongoose.connect(client,{useNewUrlParser : true});
-mongoose.connection.once('open',()=>{
-    console.log('Yes we are connected to mongoose!');
-})
+
+
 const schema = require('./schema/schema');
 const testSchema = require('./schema/types_schema');
 
@@ -22,9 +19,19 @@ mongodb+srv://cristian:<password>@cluster0.0nqvx.mongodb.net/<dbname>?retryWrite
 //Make app on object of the express class. Instintiation
 const app = express();
 
+
+mongoose.connect('',
+{
+    useNewUrlParser : true,
+    useUnifiedTopology: true
+});
+mongoose.connection.once('open',()=>{
+    console.log('Yes we are connected to mongoose!');
+})
+
 app.use('/graphql',graphqlHTTP({
     graphiql:true,
-    schema: testSchema
+    schema: schema
 }));
 
 app.listen(4000, ()=>{
