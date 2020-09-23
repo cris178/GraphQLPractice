@@ -14,7 +14,8 @@ const{
     GraphQLString,
     GraphQLInt,
     GraphQLSchema,
-    GraphQLList
+    GraphQLList,
+    GraphQLNonNull
 } = graphql;
 //Regularly you can just use them as graphql.GraphQLID but it's easier to make them their own variables to use below.
 
@@ -178,8 +179,8 @@ const Mutation = new GraphQLObjectType({
             type: UserType,
             args:{
                 //id: {type: GraphQLID},
-                name: {type: GraphQLString},
-                age: {type: GraphQLInt},
+                name: {type: new GraphQLNonNull(GraphQLString)},
+                age: {type: new GraphQLNonNull(GraphQLInt)},
                 job: {type: GraphQLString}
             },
             //id automatically created by mangodb
@@ -193,12 +194,27 @@ const Mutation = new GraphQLObjectType({
                 return user;
             }
         },
+        removeUser:{
+            type: UserType,
+            args:{
+                id: {type: new GraphQLNonNull(GraphQLString)}
+            },
+            resolve(parent,args){
+                let removedUser = User.findByIdAndRemove(
+                    args.id
+                ).exec();
+                if(!removedUser){
+                    throw new("Error");
+                }
+                return removedUser;
+            }
+        },
         createPost:{
             type: PostType,
             args:{
                 //id: {type:GraphQLId},
-                comments: {type:GraphQLString},
-                userId: {type:GraphQLID}
+                comments: {type:new GraphQLNonNull(GraphQLString)},
+                userId: {type: new GraphQLNonNull(GraphQLID)}
             },
             resolve(parent, args){
                 let post = new Post({
@@ -212,9 +228,9 @@ const Mutation = new GraphQLObjectType({
         createHobby:{
             type:HobbyType,
             args:{
-                title:{type:GraphQLString},
-                description:{type:GraphQLString},
-                userId:{type:GraphQLID}
+                title:{type:new GraphQLNonNull(GraphQLString)},
+                description:{type:new GraphQLNonNull(GraphQLString)},
+                userId:{type:new GraphQLNonNull(GraphQLID)}
             },
             resolve(parent,args){
                 let hobby = new Hobby({
@@ -225,7 +241,100 @@ const Mutation = new GraphQLObjectType({
                 hobby.save();
                 return hobby;
             }
-        }
+        },
+
+        //Update a User
+        UpdateUser:{
+            type:UserType,
+            args:{
+                id:{type: new GraphQLNonNull(GraphQLString)},
+                name: {type: new GraphQLNonNull(GraphQLString)},
+                age: {type: GraphQLInt},
+                job: {type: GraphQLString}
+            },
+            resolve(parent,args){
+                return updateUser = User.findByIdAndUpdate(
+                    args.id,{
+                        //Update with our existing conditions, we pass it in as set in order to not completely delete old data and instead just updates what we want.
+                        $set:{
+                            name: args.name,
+                            age:args.age,
+                            job: args.job
+                        }
+                    },
+                    {new:true} //Send back the updated objType
+                );
+            }
+        },
+
+        UpdatePost:{
+            type:PostType,
+            args:{
+                id:{type: new GraphQLNonNull(GraphQLString)},
+                comments: {type: new GraphQLNonNull(GraphQLString)},
+            },
+            resolve(parent,args){
+                return updatedPost = Post.findByIdAndUpdate(
+                    args.id,{   //Need to passs in id first, the object we will update with then the option which is to return what we updated
+                        //Update with our existing conditions, we pass it in as set in order to not completely delete old data and instead just updates what we want.
+                        $set:{
+                            comments:args.comments //We dont need to update user id just the comment
+                        }
+                    },
+                    {new:true} //Send back the updated objType
+                );
+            }
+        },
+        removePost:{
+            type:PostType,
+            args:{
+                id:{type: new GraphQLNonNull(GraphQLString)}//Only need the id to find and delete the post
+            },
+            resolve(parent,args){
+                let removedPost = Post.findByIdAndRemove(
+                    args.id
+                ).exec();
+                if(!removedPost){
+                    throw new("Error");
+                }
+                return removedPost;
+            }
+        },
+        updateHobby:{
+            type:HobbyType,
+            args:{
+                title:{type:new GraphQLNonNull(GraphQLString)},
+                description:{type:new GraphQLNonNull(GraphQLString)},
+                id:{type:new GraphQLNonNull(GraphQLID)}
+            },
+            resolve(parent,args){
+                return updatedHobby = Hobby.findByIdAndUpdate(
+                    args.id,
+                    {
+                        $set:{
+                            title:args.title,
+                            description:args.description
+                        }
+                    },
+                    {new:true}
+                )
+            }
+        },
+        removeHobby:{
+            type:HobbyType,
+            args:{
+                id:{type: new GraphQLNonNull(GraphQLString)}//Only need the id to find and delete the post
+            },
+            resolve(parent,args){
+                let removedHobby = Hobby.findByIdAndRemove(
+                    args.id
+                ).exec();
+                if(!removedHobby){ //if hobby is null
+                    throw new("Error");
+                }
+                return removedHobby;
+            }
+        },
         
 
     }

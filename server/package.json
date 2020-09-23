@@ -9,9 +9,14 @@
   "author": "Cristian Reyes",
   "license": "ISC",
   "dependencies": {
+    "cors": "^2.8.5",
     "express": "^4.17.1",
     "express-graphql": "^0.11.0",
     "graphql": "^15.3.0",
+    "heroku": "^7.43.2",
     "lodash": "^4.17.20"
+  },
+  "script": {
+    "start": "node index.js"
   }
 }
